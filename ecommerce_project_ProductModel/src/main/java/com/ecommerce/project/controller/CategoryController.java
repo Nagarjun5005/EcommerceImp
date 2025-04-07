@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
-public class categoryController {
+public class CategoryController {
 
     private final CategoryService categoryService;
 
@@ -21,7 +21,7 @@ public class categoryController {
         return new ResponseEntity<>("Echoed message : "+message,HttpStatus.OK);
     }
 
-    public categoryController(CategoryService categoryService) {
+    public CategoryController(CategoryService categoryService) {
         this.categoryService = categoryService;
     }
 
