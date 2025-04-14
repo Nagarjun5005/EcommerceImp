@@ -10,6 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api")
@@ -28,6 +31,7 @@ public class ProductController {
     }
 
     //get all products
+    //need to debug this
     @GetMapping("/public/products")
     public ResponseEntity<ProductResponse> getAllProducts(){
       ProductResponse productResponse=  productService.getAllProduct();
@@ -46,6 +50,31 @@ public class ProductController {
     public ResponseEntity<ProductResponse>searchProductByKeyword(@PathVariable String keyword){
        ProductResponse productResponse= productService.searchProductByKeyWord(keyword);
        return new ResponseEntity<>(productResponse,HttpStatus.FOUND);
+    }
+
+    //update the product
+    @PutMapping("/admin/products/{productId}")
+    public ResponseEntity<ProductDTO>updateProduct
+    (@RequestBody Product product,@PathVariable Long productId){
+        ProductDTO updatedProduct=productService.updateProduct(product,productId);
+        return new ResponseEntity<>(updatedProduct,HttpStatus.OK);
+    }
+
+    //delete the product
+
+    @DeleteMapping("/admin/products/{productId}")
+    public ResponseEntity<ProductDTO> deleteProduct(@PathVariable Long productId){
+      ProductDTO deleteProductDTO=  productService.deleteProduct(productId);
+      return new ResponseEntity<>(deleteProductDTO,HttpStatus.OK);
+    }
+
+    //update the image
+    @PutMapping("/admin/{productId}/image")
+    public ResponseEntity<ProductDTO>updateImage(@PathVariable Long productId,
+                                                 @RequestParam("image")
+                                                 MultipartFile image) throws IOException {
+       ProductDTO updatedProduct= productService.updateImage(productId,image);
+       return new ResponseEntity<>(updatedProduct,HttpStatus.OK);
     }
 
 }
