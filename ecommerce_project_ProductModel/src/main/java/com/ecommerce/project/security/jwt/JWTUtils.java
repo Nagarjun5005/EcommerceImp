@@ -76,6 +76,14 @@ public class JWTUtils {
 
     }
 
+    public ResponseCookie generateCleanJwtCookie(){
+        ResponseCookie cookie=ResponseCookie.from(jwtCookie,null)
+                .path("/api")
+                .build();
+        return cookie;
+
+    }
+
     /**
      * Generates a JWT token using the provided user details.
      *
