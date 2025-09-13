@@ -24,7 +24,7 @@ public class Cart {
 
     @OneToOne
     @JoinColumn(name="user_id")
-    private User userId;
+    private User user;
 
     @OneToMany(mappedBy = "cart",cascade = {
             CascadeType.PERSIST,CascadeType.REMOVE,CascadeType.MERGE
