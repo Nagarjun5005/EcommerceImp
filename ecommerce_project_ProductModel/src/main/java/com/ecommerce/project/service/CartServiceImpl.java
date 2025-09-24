@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
@@ -90,6 +91,34 @@ public class CartServiceImpl implements CartService{
         cartDto.setProducts(productDTOStream.toList());
         // Return the final updated cart
         return cartDto;
+    }
+
+    @Override
+    public List<CartDTO> getAllCarts() {
+        // Retrieve all Cart entities from the repository
+        List<Cart>carts  = cartRepository.findAll();
+        // If no carts exist, throw an exception
+        if(carts.isEmpty()){
+            throw new APIException("No Carts Exists");
+        }
+
+        // Convert each Cart entity to CartDTO
+        List<CartDTO>cartDTOs=  carts.stream().map(cart->{
+
+            // Map basic Cart fields to CartDTO
+            CartDTO cartDto = modelMapper.map(cart, CartDTO.class);
+
+            // Map each CartItem's Product to ProductDTO
+            List<ProductDTO>products=cart.getCartItems().stream().map(p->
+                modelMapper.map(p.getProduct(),ProductDTO.class)).collect(Collectors.toList());
+
+            // Set the ProductDTO list into CartDTO
+          cartDto.setProducts(products);
+          return cartDto;
+        }).collect(Collectors.toList());
+
+        // Return the list of CartDTOs
+        return cartDTOs;
     }
 
     /**
