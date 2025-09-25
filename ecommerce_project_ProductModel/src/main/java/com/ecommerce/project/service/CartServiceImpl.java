@@ -11,6 +11,7 @@ import com.ecommerce.project.repository.CartItemRepository;
 import com.ecommerce.project.repository.CartRepository;
 import com.ecommerce.project.repository.ProductRepository;
 import com.ecommerce.project.util.AuthUtil;
+import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -50,16 +51,18 @@ public class CartServiceImpl implements CartService{
         //Retrieve cartItem
         // Check if the product is already present in the cart
         CartItem cartItem=cartItemRepository.findCartItemByProductIdAndCartId(cart.getCartId(),productId);
-        if(cartItem!=null){
-            throw new APIException("product "+product.getProductName()+"already exists");
+
+        if (cartItem != null) {
+            throw new APIException("Product " + product.getProductName() + " already exists in the cart");
         }
-        // Check if the product is out of stock
-        if(product.getQuantity()==0){
-            throw new APIException(product.getProductName()+" is not available");
+
+        if (product.getQuantity() == 0) {
+            throw new APIException(product.getProductName() + " is not available");
         }
-        // Check if the requested quantity exceeds available stock
-        if(product.getQuantity()<quantity){
-            throw new APIException(product.getProductName()+" quantities remaining "+product.getQuantity());
+
+        if (product.getQuantity() < quantity) {
+            throw new APIException("Please, make an order of the " + product.getProductName()
+                    + " less than or equal to the quantity " + product.getQuantity() + ".");
         }
 
 
@@ -145,6 +148,83 @@ public class CartServiceImpl implements CartService{
 
         return cartDTO;
     }
+
+    @Transactional
+    @Override
+    public CartDTO updateProductQuantityInCart(Long productId, Integer quantity) {
+
+        // Get the logged-in user's email (who is updating the cart)
+        String emailId = authUtil.loggedInEmail();
+
+        // Fetch the cart linked to this user
+        Cart userCart = cartRepository.findCartByEmail(emailId);
+
+        // Extract cartId from the fetched cart
+        Long cartId = userCart.getCartId();
+
+        // Re-fetch the cart from DB (this is redundant since userCart already has the cart,
+        // but here it's being done to ensure it exists & is fully managed by JPA)
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("cart", "cartId", cartId));
+
+        // Fetch product by productId, or throw exception if it doesn't exist
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+
+        // If product is out of stock
+        if (product.getQuantity() == 0) {
+            throw new APIException(product.getProductName() + " is not available");
+        }
+
+        // If user tries to add more quantity than available stock
+        if (product.getQuantity() < quantity) {
+            throw new APIException("Please, make an order of the " + product.getProductName()
+                    + " less than or equal to the quantity " + product.getQuantity() + ".");
+        }
+
+        // Fetch the existing CartItem for this product in the user's cart
+        CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(cartId, productId);
+        if (cartItem == null) {
+            throw new APIException("Product " + product.getProductName() + " not available in the cart!!");
+        }
+
+        // Update cartItem details with latest product values
+        cartItem.setProductPrice(product.getSpecialPrice());
+        cartItem.setQuantity(cartItem.getQuantity() + quantity); // increment/decrement quantity
+        cartItem.setDiscount(product.getDiscount());
+
+        // Update the total price of the cart
+        cart.setTotalPrice(cart.getTotalPrice() + (cartItem.getProductPrice() * quantity));
+
+        // Save the updated cart
+        cartRepository.save(cart);
+
+        // Save the updated cart item
+        CartItem updatedItem = cartItemRepository.save(cartItem);
+
+        // If the updated item’s quantity becomes 0, remove it from the cart
+        if (updatedItem.getQuantity() == 0) {
+            cartItemRepository.deleteById(updatedItem.getCartItemId());
+        }
+
+        // Convert cart entity to DTO
+        CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
+
+        // Map each cart item’s product to ProductDTO with the updated quantity
+        List<CartItem> cartItems = cart.getCartItems();
+        Stream<ProductDTO> productDTOStream = cartItems.stream().map(item -> {
+            ProductDTO prd = modelMapper.map(item.getProduct(), ProductDTO.class);
+            prd.setQuantity(item.getQuantity()); // override product stock with cart quantity
+            return prd;
+        });
+
+        // Set the products inside CartDTO
+        cartDTO.setProducts(productDTOStream.toList());
+
+        // Return the final updated cart
+        return cartDTO;
+    }
+
 
 
     /**
