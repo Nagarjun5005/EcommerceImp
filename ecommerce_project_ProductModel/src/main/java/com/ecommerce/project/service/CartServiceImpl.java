@@ -188,16 +188,26 @@ public class CartServiceImpl implements CartService{
             throw new APIException("Product " + product.getProductName() + " not available in the cart!!");
         }
 
-        // Update cartItem details with latest product values
-        cartItem.setProductPrice(product.getSpecialPrice());
-        cartItem.setQuantity(cartItem.getQuantity() + quantity); // increment/decrement quantity
-        cartItem.setDiscount(product.getDiscount());
+        int newQuantity=cartItem.getQuantity()+quantity;
+        if(newQuantity<0){
+            throw new APIException("The resulting quantity cannot be zero");
+        }
 
-        // Update the total price of the cart
-        cart.setTotalPrice(cart.getTotalPrice() + (cartItem.getProductPrice() * quantity));
+        if(newQuantity==0){
+            deleteProductFromCart(cartId,productId);
+        }else {
 
-        // Save the updated cart
-        cartRepository.save(cart);
+            // Update cartItem details with latest product values
+            cartItem.setProductPrice(product.getSpecialPrice());
+            cartItem.setQuantity(cartItem.getQuantity() + quantity); // increment/decrement quantity
+            cartItem.setDiscount(product.getDiscount());
+
+            // Update the total price of the cart
+            cart.setTotalPrice(cart.getTotalPrice() + (cartItem.getProductPrice() * quantity));
+
+            // Save the updated cart
+            cartRepository.save(cart);
+        }
 
         // Save the updated cart item
         CartItem updatedItem = cartItemRepository.save(cartItem);
@@ -225,24 +235,34 @@ public class CartServiceImpl implements CartService{
         return cartDTO;
     }
 
+
+    @Transactional
     @Override
     public String deleteProductFromCart(Long cartId, Long productId) {
 
-        //find the cart with cart id
-        Cart cart = cartRepository.findById(cartId).orElseThrow(()->new ResourceNotFoundException("Cart","cartId",cartId));
+        // 1. Fetch the cart by its ID from the database.
+        //    If the cart does not exist, throw a ResourceNotFoundException.
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart", "cartId", cartId));
 
-        //find cart item respective to cartId and productId
+        // 2. Fetch the specific CartItem corresponding to the cart and product.
+        //    This represents the product entry in the cart.
         CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(cartId, productId);
-        if(cartItem==null){
+
+        // 3. If the CartItem does not exist, throw an exception indicating the product is not in the cart.
+        if (cartItem == null) {
             throw new ResourceNotFoundException("Product", "productId", productId);
         }
 
-        //before delete---update the cart total price
-        cart.setTotalPrice(cart.getTotalPrice()-(cartItem.getProductPrice()*cartItem.getQuantity()));
+        // 4. Before deleting, update the cart's total price.
+        //    Subtract the total price contribution of this product (price * quantity) from the cart total.
+        cart.setTotalPrice(cart.getTotalPrice() - (cartItem.getProductPrice() * cartItem.getQuantity()));
 
-        //delete the product from the cart
-         cartItemRepository.deleteCartItemByProductIdAndCartId(cartId, productId);
-        return "Product "+cartItem.getProduct().getProductName()+" removed from the car!!";
+        // 5. Delete the cart item from the cart in the database.
+        cartItemRepository.deleteCartItemByProductIdAndCartId(cartId, productId);
+
+        // 6. Return a success message including the product name to confirm deletion.
+        return "Product " + cartItem.getProduct().getProductName() + " removed from the cart!!";
     }
 
 
