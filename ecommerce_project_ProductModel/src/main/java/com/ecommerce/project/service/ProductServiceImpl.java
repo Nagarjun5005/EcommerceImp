@@ -3,10 +3,13 @@ package com.ecommerce.project.service;
 
 import com.ecommerce.project.exception.APIException;
 import com.ecommerce.project.exception.ResourceNotFoundException;
+import com.ecommerce.project.model.Cart;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.model.Product;
+import com.ecommerce.project.payload.CartDTO;
 import com.ecommerce.project.payload.ProductDTO;
 import com.ecommerce.project.payload.ProductResponse;
+import com.ecommerce.project.repository.CartRepository;
 import com.ecommerce.project.repository.CategoryRepository;
 import com.ecommerce.project.repository.ProductRepository;
 import org.modelmapper.ModelMapper;
@@ -26,6 +29,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class ProductServiceImpl implements ProductService{
+
+    @Autowired
+    private CartRepository cartRepository;
+
+    @Autowired
+    private CartService cartService;
 
     @Autowired
     private ProductRepository productRepository;
@@ -176,19 +185,43 @@ public class ProductServiceImpl implements ProductService{
 
     @Override
     public ProductDTO updateProduct(Product product, Long productId) {
-        //from db get  the product
+        // ✅ 1. Fetch the existing product from the database
+        // If the product does not exist, throw a ResourceNotFoundException
         Product productFound = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("product", "productId", productId));
-        // set all the product details
+        // ✅ 2. Update the product fields with the new values from the input
         productFound.setProductName(product.getProductName());
         productFound.setQuantity(product.getQuantity());
         productFound.setPrice(product.getPrice());
         productFound.setDescription(product.getDescription());
+        // ✅ 3. Recalculate the special price after applying the discount
         double specialPrice= product.getPrice()-(product.getPrice()*(product.getDiscount()/100));
         productFound.setSpecialPrice(specialPrice);
-        //save to the database
+
+        // ✅ 4. Save the updated product details to the database
         productRepository.save(productFound);
-        //return the productDto
+
+        // ✅ 5. Retrieve all carts that currently contain this product
+        // (So that their prices can be updated to reflect the new product price)
+        List<Cart>carts=cartRepository.findCartsByProductId(productId);
+
+        // 6. Convert carts to DTO (optional — for mapping convenience)
+        List<CartDTO>cartDTOS=carts.stream().map(cart -> {
+            CartDTO cartDTO=modelMapper.map(cart,CartDTO.class);
+
+            List<ProductDTO>products=cart.getCartItems()
+                    .stream()
+                    .map(p->modelMapper.map(p.getProduct(),ProductDTO.class))
+                    .collect(Collectors.toList());
+
+            cartDTO.setProducts(products);
+            return cartDTO;
+
+        }).collect(Collectors.toList());
+
+        //  7. For each cart containing this product, update its cart item
+        cartDTOS.forEach(cart->cartService.updateProductInCarts(cart.getCartId(),productId));
+        // ✅ 8. Return the updated product mapped to a ProductDTO
         return modelMapper.map(productFound,ProductDTO.class);
     }
 
