@@ -111,6 +111,7 @@ public class CategoryServiceImpl implements CategoryService {
         //find the category
 
         categoryFromDB.setCategoryId(categoryId);
+        categoryFromDB.setCategoryName(categoryDTO.getCategoryName());
         categoryRepository.save(categoryFromDB);
 
         CategoryDTO dto=new CategoryDTO();
