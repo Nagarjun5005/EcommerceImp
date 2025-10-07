@@ -6,6 +6,7 @@ import com.ecommerce.project.model.User;
 import com.ecommerce.project.payload.AddressDTO;
 import com.ecommerce.project.repository.AddressRepository;
 import com.ecommerce.project.repository.UserRepository;
+import com.ecommerce.project.util.AuthUtil;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,10 @@ public class AddressServiceImpl implements AddressService{
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AuthUtil authUtil;
+
 
     @Override
     public AddressDTO createAddress(AddressDTO addressDTO, User user) {
@@ -96,6 +101,21 @@ public class AddressServiceImpl implements AddressService{
         user.getAddresses().add(updatedAddress);
         userRepository.save(user);
         return   modelMapper.map(updatedAddress,AddressDTO.class);
+
+    }
+
+    @Override
+    public String deleteAddress(Long addressId) {
+        //find the address from the db
+            Address addressFromDb = addressRepository.findById(addressId)
+                .orElseThrow(() -> new ResourceNotFoundException("Address", "addressId", addressId));
+        User user = addressFromDb.getUser();
+       user.getAddresses().removeIf(address -> address.getAddressId().equals(addressId));
+       userRepository.save(user);
+
+       addressRepository.delete(addressFromDb);
+
+       return "address deleted successfully with addressId :"+addressId;
 
     }
 }
