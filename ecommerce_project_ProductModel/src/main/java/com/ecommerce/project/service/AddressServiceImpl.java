@@ -1,5 +1,6 @@
 package com.ecommerce.project.service;
 
+import com.ecommerce.project.exception.ResourceNotFoundException;
 import com.ecommerce.project.model.Address;
 import com.ecommerce.project.model.User;
 import com.ecommerce.project.payload.AddressDTO;
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -51,5 +53,15 @@ public class AddressServiceImpl implements AddressService{
         .collect(Collectors.toList());
         // 3️⃣ Return the DTO list
         return addressDTOList;
+    }
+
+    @Override
+    public AddressDTO getAddressById(Long id) {
+        //get the address by id : if not found throw resource not found exception
+        Address addressFound = addressRepository.findById(id).orElseThrow(ResourceNotFoundException::new);
+        //convert address to addressDto
+        AddressDTO addressDTOFound    = modelMapper.map(addressFound, AddressDTO.class);
+        //return the addressDto
+        return addressDTOFound;
     }
 }
