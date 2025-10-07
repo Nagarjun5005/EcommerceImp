@@ -5,6 +5,7 @@ import com.ecommerce.project.model.Address;
 import com.ecommerce.project.model.User;
 import com.ecommerce.project.payload.AddressDTO;
 import com.ecommerce.project.repository.AddressRepository;
+import com.ecommerce.project.repository.UserRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,9 @@ public class AddressServiceImpl implements AddressService{
 
     @Autowired
     private AddressRepository addressRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public AddressDTO createAddress(AddressDTO addressDTO, User user) {
@@ -70,5 +74,28 @@ public class AddressServiceImpl implements AddressService{
         List<Address> addresses = user.getAddresses();
         List<AddressDTO> userAddressList    = addresses.stream().map(address -> modelMapper.map(address, AddressDTO.class)).toList();
         return userAddressList;
+    }
+
+    @Override
+    public AddressDTO updateAddress(AddressDTO addressDTO,Long addressId) {
+        //find the address by id from the database, or else throw rnf exception
+        Address address = addressRepository.findById(addressId).orElseThrow(() -> new ResourceNotFoundException("Address", "AddressId", addressId));
+        //update the parameters
+        address.setStreet(addressDTO.getStreet());
+        address.setBuildingName(addressDTO.getBuildingName());
+        address.setCity(addressDTO.getCity());
+        address.setState(addressDTO.getState());
+        address.setCountry(addressDTO.getCountry());
+        address.setPincode(addressDTO.getPincode());
+        //convert address to addressDTO
+        Address updatedAddress  = addressRepository.save(address);
+
+        User user=address.getUser();
+        user.getAddresses().removeIf(address1 -> address.getAddressId()
+                .equals(addressId));
+        user.getAddresses().add(updatedAddress);
+        userRepository.save(user);
+        return   modelMapper.map(updatedAddress,AddressDTO.class);
+
     }
 }

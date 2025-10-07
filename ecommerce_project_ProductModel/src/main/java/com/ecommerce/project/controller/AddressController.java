@@ -46,10 +46,17 @@ public class AddressController {
 
 
     @GetMapping("/users/address")
-    public ResponseEntity<List<AddressDTO>>getAddressBYUser(){
+    public ResponseEntity<List<AddressDTO>>getAddressByUser(){
         User user = authUtil.loggedInUser();
         List<AddressDTO>  addressDTO=addressService.getUserAddress(user);
         return new ResponseEntity<List<AddressDTO>>(addressDTO,HttpStatus.FOUND);
+    }
+
+    @PutMapping("/address/{addressId}")
+    public ResponseEntity<AddressDTO>updateAddress(@RequestBody AddressDTO addressDTO, @PathVariable Long addressId){
+        AddressDTO updatedAddress=addressService.updateAddress(addressDTO,addressId);
+        return new ResponseEntity<AddressDTO>(updatedAddress,HttpStatus.OK);
+
     }
 
 }
