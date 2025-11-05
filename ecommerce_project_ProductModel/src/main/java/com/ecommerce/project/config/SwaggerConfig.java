@@ -2,6 +2,9 @@ package com.ecommerce.project.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
@@ -41,6 +44,13 @@ public class SwaggerConfig {
 
         // Build and return OpenAPI object with security setup
         return new OpenAPI()
+                .info(new Info()
+                        .title("Ecommerce Application By Nagarjun")
+                        .version("1.0")
+                        .description("Ecommerce application: Nagarjun")
+                        .license(new License().name("Apache 2.0"))
+                        .contact(new Contact().name("Nagajun").email("Nagrjun20n@gmail.com"))
+                        )
                 .components(new Components()
                         .addSecuritySchemes("Bearer Authentication", securityScheme))
                 .addSecurityItem(bearerRequirement);
