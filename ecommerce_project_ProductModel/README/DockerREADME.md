@@ -229,3 +229,77 @@ docker compose up
 ```
 
 This is a production-style setup widely used in real-world backend applications.
+
+---
+# ✅ Steps to Push a Docker Image to Docker Hub (What We Did)
+### 1️⃣ Build your backend Docker image
+
+Your backend image was built automatically when you ran:
+```commandline
+docker compose up --build
+```
+
+
+This created the image:
+
+```commandline
+ecommerce_project_productmodel-backend:latest
+```
+
+### 2️⃣ Log in to Docker Hub
+```commandline
+docker login
+```
+
+
+You entered your Docker Hub username and password successfully.
+
+#### 3️⃣ Check available Docker images
+```
+docker images
+```
+
+You identified the correct backend image with:
+
+Repository: ecommerce_project_productmodel-backend
+
+Image ID: 4fda5d5adb2b
+
+### 4️⃣ Tag the image for Docker Hub
+
+You tagged the image using your Docker Hub username:
+
+```commandline
+docker tag 4fda5d5adb2b nagarjun20/ecommerce-backend:latest
+```
+
+
+This creates a new reference pointing to your local image.
+
+### 5️⃣ Push the image to Docker Hub
+```commandline
+docker push nagarjun20/ecommerce-backend:latest
+```
+
+
+Output confirmed that all layers were uploaded:
+
+```commandline
+latest: digest: sha256:4fda5d5adb2b... size: 856
+```
+
+
+This means your image is now public at:
+
+```
+ https://hub.docker.com/r/nagarjun20/ecommerce-backend
+```
+
+### 6️⃣ (Optional but recommended) Tagging versioned releases
+
+You can create a version tag like this:
+```commandline
+docker tag 4fda5d5adb2b nagarjun20/ecommerce-backend:v1
+docker push nagarjun20/ecommerce-backend:v1
+```
+
