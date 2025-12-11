@@ -52,33 +52,55 @@ public class AuthController {
 
 
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequests loginRequests){
+    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequests loginRequests) {
 
         Authentication authentication;
-        try{
-            authentication=authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequests.getUsername(),
-                            loginRequests.getPassword())
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequests.getUsername(),
+                            loginRequests.getPassword()
+                    )
             );
-
-        }catch (AuthenticationException e){
-            Map<String,Object> map=new HashMap<>();
-            map.put("message","Bad Credentials");
-            map.put("status",false);
-            return new ResponseEntity<Object>(map, HttpStatus.UNAUTHORIZED);
+        } catch (AuthenticationException e) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("message", "Bad Credentials");
+            map.put("status", false);
+            return new ResponseEntity<>(map, HttpStatus.UNAUTHORIZED);
         }
 
+        // ✅ Set the authenticated user in security context
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        Userdetailsimpl userDetails= (Userdetailsimpl) authentication.getPrincipal();
-        ResponseCookie jwtCookie=jwtUtils.generateJwtCookie(userDetails);
-        List<String> roles=userDetails.getAuthorities()
+
+        // ✅ Get authenticated user details
+        Userdetailsimpl userDetails = (Userdetailsimpl) authentication.getPrincipal();
+
+        // ✅ Generate JWT Cookie (for browser usage)
+        ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
+
+        // ✅ Generate JWT Token String (for Swagger/Postman)
+        String jwtToken = jwtUtils.getTokenFromUserName(userDetails.getUsername());
+
+        // ✅ Extract user roles
+        List<String> roles = userDetails.getAuthorities()
                 .stream()
-                .map(GrantedAuthority::getAuthority).toList();
+                .map(GrantedAuthority::getAuthority)
+                .toList();
 
-        UserInfoResponse response=new UserInfoResponse(userDetails.getId(),userDetails.getUsername(),roles);
+        // ✅ Create response that includes the token
+        UserInfoResponse response = new UserInfoResponse(
+                userDetails.getId(),
+                jwtToken, // Added: include token here
+                userDetails.getUsername(),
+                roles
+        );
 
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,jwtCookie.toString()).body(response);
+        // ✅ Return cookie (for browser) + response body (for Swagger/Postman)
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                .body(response);
     }
+
 
     @PostMapping("/signup")
     public ResponseEntity<?>registerUser(@Valid @RequestBody SignupRequest signupRequest ){

@@ -4,6 +4,12 @@ import com.ecommerce.project.config.AppConstants;
 import com.ecommerce.project.payload.CategoryDTO;
 import com.ecommerce.project.payload.CategoryResponse;
 import com.ecommerce.project.service.CategoryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +43,12 @@ public class CategoryController {
      CategoryResponse categoryResponse = categoryService.getAllcategories(pageNumber,pageSize,sortBy,sortOrder);
      return new ResponseEntity<>(categoryResponse,HttpStatus.OK);
  }
-
+    @Tag(name = "category api's",description = "Api;s for managing categories")
+    @Operation(summary = "Create Category", description = "API to create a new category")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201",description = "Category is created",content = @Content),
+            @ApiResponse(responseCode = "400",description = "Invalid Input",content = @Content)
+    })
     @PostMapping("/public/categories")
     public ResponseEntity<String> addCategory(@Valid  @RequestBody CategoryDTO categoryDTO){
         categoryService.createCategory(categoryDTO);
@@ -46,7 +57,7 @@ public class CategoryController {
 
 
     @DeleteMapping("/admin/categories/{categoryId}")
-    public ResponseEntity<CategoryDTO> deleteCategory(@PathVariable Long categoryId){
+    public ResponseEntity<CategoryDTO> deleteCategory(@Parameter(description = "the category to be deleted") @PathVariable Long categoryId){
         CategoryDTO categoryDTO = categoryService.deleteCategory(categoryId);
         return new ResponseEntity<>(categoryDTO,HttpStatus.OK);
     }
